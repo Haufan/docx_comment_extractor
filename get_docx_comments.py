@@ -21,12 +21,11 @@ def get_file_list(*args):
 
     annot_file_list = []
     party_file_dict = {}
-    print(args)
-    _path = os.listdir(args[0])
-    print(_path)
+    _path = args[0]
+    _path_content = os.listdir(args[0])
 
     # Ordnet Dateien in Liste mit docx und Dict nach Partei: pdf
-    for file in _path:
+    for file in _path_content:
         if file.endswith(".docx"):
             annot_file_list.append(file)
         elif file.endswith(".pdf"):
@@ -34,18 +33,18 @@ def get_file_list(*args):
 
     # Checkt, ob Annotationsdateien existieren
     if annot_file_list == []:
-        print("There are no annotation files. "
-              "Check the folder or if they are named correctly (e.g. SPD***.docx).")
+        print("ERROR   There are no annotation files. "
+              "Check the folder or if they are named correctly (e.g. SPD***.docx).\n")
 
     # Checkt, ob jede Annotation einem Parteiprogramm zugeordnet werden kann
     for file in annot_file_list:
         if file[:3] not in party_file_dict.keys():
-            print(f"The following party program is missing: {file[:3]}")
+            print(f"ERROR   The following party program is missing: {file[:3]}\n")
             quit()
         else:
             pass
 
-    return [annot_file_list, party_file_dict]
+    return [annot_file_list, party_file_dict, _path]
 
 
 def get_all_data(files):
@@ -53,17 +52,21 @@ def get_all_data(files):
 
     annot_file_list = files[0]
     party_file_dict = files[1]
+    _path = files[2]
     all_data_df = pandas.DataFrame(columns=['File',
                                             'Annotation',
                                             'Comment',
                                             'Text',
                                             'Page'])
 
+    print('\nProgram started\n')
+    print('Extracting comments ...\n')
+
     with alive_bar(len(annot_file_list), force_tty=True) as bar:
 
         for file in annot_file_list:
-            _temp_annot_file_path = "data/" + file
-            _temp_party_file_path = "data/" + party_file_dict[file[:3]]
+            _temp_annot_file_path = os.path.join(_path, file)
+            _temp_party_file_path = os.path.join(_path, party_file_dict[file[:3]])
             file_data_df = get_docx_comments(_temp_annot_file_path, _temp_party_file_path)
 
             all_data_df = pandas.concat([all_data_df, file_data_df], ignore_index=True)
@@ -71,7 +74,7 @@ def get_all_data(files):
         bar()
 
     all_data_df.to_csv('data.csv', sep='|', mode='a', encoding='utf-8')
-    print('Data can be found in data.csv')
+    print('\nData can be found in program folder: data.csv')
 
 
 def get_docx_comments(filename, party_file):
