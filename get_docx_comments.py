@@ -4,6 +4,7 @@
 
 
 from alive_progress import alive_bar
+import argparse
 from lxml import etree
 import os
 import pandas
@@ -12,7 +13,7 @@ import re
 import zipfile
 
 
-def get_file_list():
+def get_file_list(*args):
     """
     Extracts a list of files with docx formats and
     creates a dictionary of parties and their program-file
@@ -20,24 +21,26 @@ def get_file_list():
 
     annot_file_list = []
     party_file_dict = {}
+    print(args)
+    _path = os.listdir(args[0])
+    print(_path)
 
-    # Checkt, ob Dateien im data-Ordner
-    if not os.listdir("data"):
-        print("The data-folder is empty. Necessary files are missing.")
-        quit()
+    # Ordnet Dateien in Liste mit docx und Dict nach Partei: pdf
+    for file in _path:
+        if file.endswith(".docx"):
+            annot_file_list.append(file)
+        elif file.endswith(".pdf"):
+            party_file_dict[file[:3]] = file
 
-    else:
-        # Ordnet Dateien in Liste mit docx und Dict nach Partei: pdf
-        for file in os.listdir("data"):
-            if file.endswith(".docx"):
-                annot_file_list.append(file)
-            elif file.endswith(".pdf"):
-                party_file_dict[file[:3]] = file
+    # Checkt, ob Annotationsdateien existieren
+    if annot_file_list == []:
+        print("There are no annotation files. "
+              "Check the folder or if they are named correctly (e.g. SPD***.docx).")
 
     # Checkt, ob jede Annotation einem Parteiprogramm zugeordnet werden kann
     for file in annot_file_list:
         if file[:3] not in party_file_dict.keys():
-            print(f"The follwing party program is missing: {file[:3]}")
+            print(f"The following party program is missing: {file[:3]}")
             quit()
         else:
             pass
@@ -180,4 +183,13 @@ def get_page_pdf(pdf_path, sentence):
 
 
 if __name__ == '__main__':
-    get_all_data(get_file_list())
+    parser = argparse.ArgumentParser(prog='Projekt Parteirogramme - get_docx_comments.py',
+                                     description='Das Programm extrahiert alle Kommentare aus docx-Dateien und '
+                                                 'deren Seitenzahlen aus dem Original pdf-Dokument. '
+                                                 'Die Daten werden in einer csv-Datei ausgegeben '
+                                                 '(Der Separator ist aber \'|\').\n')
+    parser.add_argument('path', nargs='?', type=str, default='data',
+                        help='Ordnerpfad mit Annotationsdateien (.docx) und Parteiprogrammen (.pdf)')
+    args = parser.parse_args()
+
+    get_all_data(get_file_list(args.path))
